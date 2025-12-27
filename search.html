@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>Karaoke Song Finder</title>
+<style>
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+input[type="text"] {
+  width: 90%;
+  font-size: 18px;
+  padding: 10px;
+}
+.result {
+  margin-top: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+}
+a {
+  text-decoration: none;
+  color: #0066cc;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🎤 Karaoke 歌曲搜尋</h2>
+
+<p>① 先選擇 <code>data.json</code> 檔案：</p>
+<input type="file" id="fileInput" accept=".json"><br><br>
+
+<p>② 輸入歌名：</p>
+<input id="q" placeholder="輸入歌名（日文 / 羅馬拼音）">
+
+<div id="results"></div>
+
+<script>
+let songs = [];
+
+function normalize(str) {
+  return str
+    .toLowerCase()
+    .replace(/[ァ-ン]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/[\s\-_.]/g, "");
+}
+
+document.getElementById("fileInput").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.split("\n");
+    songs = lines.map(l => {
+      try { return JSON.parse(l); } catch { return null; }
+    }).filter(Boolean);
+
+    alert("資料載入完成，共 " + songs.length + " 筆");
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById("q").addEventListener("input", () => {
+  const q = normalize(document.getElementById("q").value);
+  const box = document.getElementById("results");
+  box.innerHTML = "";
+
+  if (!q) return;
+
+  let count = 0;
+  for (const s of songs) {
+    const title = s.title || "";
+    const norm = normalize(title);
+    if (norm.includes(q)) {
+      const div = document.createElement("div");
+      div.className = "result";
+      div.innerHTML = `
+        <b>${title}</b><br>
+        <a href="https://youtu.be/${s.id}" target="_blank">開啟影片</a>
+      `;
+      box.appendChild(div);
+      count++;
+    }
+  }
+
+  if (count === 0) {
+    box.innerHTML = "<i>找不到符合的歌曲</i>";
+  }
+});
+</script>
+
+</body>
+</html>
