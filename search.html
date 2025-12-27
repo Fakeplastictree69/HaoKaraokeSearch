@@ -2,13 +2,13 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>Karaoke Song Finder</title>
+<title>Karaoke Song Search</title>
 <style>
 body {
   font-family: sans-serif;
   padding: 20px;
 }
-input[type="text"] {
+input {
   width: 90%;
   font-size: 18px;
   padding: 10px;
@@ -29,17 +29,30 @@ a {
 
 <h2>🎤 Karaoke 歌曲搜尋</h2>
 
-<p>① 先選擇 <code>data.json</code> 檔案：</p>
-<input type="file" id="fileInput" accept=".json"><br><br>
-
-<p>② 輸入歌名：</p>
-<input id="q" placeholder="輸入歌名（日文 / 羅馬拼音）">
+<input id="q" placeholder="輸入歌名（日文／羅馬拼音）">
 
 <div id="results"></div>
 
 <script>
+// ===== 設定資料來源（你的 Release 連結）=====
+const DATA_URL = "https://github.com/Fakeplastictree69/HaoKaraokeSearch/releases/download/v1.0/data.json";
+
+// ===== 讀取資料 =====
 let songs = [];
 
+fetch(DATA_URL)
+  .then(res => res.json())
+  .then(data => {
+    songs = data;
+    console.log("資料載入成功，共", songs.length, "筆");
+  })
+  .catch(err => {
+    console.error("讀取資料失敗：", err);
+    document.getElementById("results").innerHTML =
+      "<b>❌ 無法載入資料，請確認 data.json 是否存在</b>";
+  });
+
+// ===== 工具函式 =====
 function normalize(str) {
   return str
     .toLowerCase()
@@ -47,46 +60,33 @@ function normalize(str) {
     .replace(/[\s\-_.]/g, "");
 }
 
-document.getElementById("fileInput").addEventListener("change", e => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    const lines = e.target.result.split("\n");
-    songs = lines.map(l => {
-      try { return JSON.parse(l); } catch { return null; }
-    }).filter(Boolean);
-
-    alert("資料載入完成，共 " + songs.length + " 筆");
-  };
-  reader.readAsText(file);
-});
-
+// ===== 搜尋事件 =====
 document.getElementById("q").addEventListener("input", () => {
-  const q = normalize(document.getElementById("q").value);
+  const keyword = normalize(document.getElementById("q").value);
   const box = document.getElementById("results");
   box.innerHTML = "";
 
-  if (!q) return;
+  if (!keyword) return;
 
-  let count = 0;
-  for (const s of songs) {
-    const title = s.title || "";
+  let found = 0;
+
+  for (const song of songs) {
+    const title = song.title || "";
     const norm = normalize(title);
-    if (norm.includes(q)) {
+
+    if (norm.includes(keyword)) {
       const div = document.createElement("div");
       div.className = "result";
       div.innerHTML = `
         <b>${title}</b><br>
-        <a href="https://youtu.be/${s.id}" target="_blank">開啟影片</a>
+        <a href="https://youtu.be/${song.id}" target="_blank">開啟影片</a>
       `;
       box.appendChild(div);
-      count++;
+      found++;
     }
   }
 
-  if (count === 0) {
+  if (found === 0) {
     box.innerHTML = "<i>找不到符合的歌曲</i>";
   }
 });
